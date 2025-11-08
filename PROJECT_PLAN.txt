@@ -1,0 +1,1397 @@
+================================================================================
+                        SWIFF PROJECT DEVELOPMENT PLAN
+                     Personal Finance & Bill Splitting App
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Current Status
+2. Development Phases Overview
+3. Phase 1: Bills Management
+4. Phase 2: Bill Splitting
+5. Phase 3: Personal Subscriptions
+6. Phase 4: Groups & Shared Expenses
+7. Phase 5: Dashboard Integration
+8. Phase 6: Polish & Production
+
+
+================================================================================
+1. CURRENT STATUS
+================================================================================
+
+✓ COMPLETED:
+- [x] Project initialized with React + Vite
+- [x] TailwindCSS configured with Tesla-inspired design system
+- [x] Supabase backend setup with complete database schema
+- [x] Base UI components created (Button, Input, Card, Modal, Loader)
+- [x] Authentication bypassed for development
+- [x] Basic Dashboard page with mock data
+- [x] Routing configured (React Router)
+- [x] State management setup (React Query)
+
+🎨 DESIGN SYSTEM:
+- Primary Color: Tesla Red (#E82127)
+- Accent: Blue (#3457DC)
+- Typography: Inter, SF Pro Display
+- Animation: Framer Motion
+- Styling: TailwindCSS v4
+
+📊 DATABASE TABLES (Supabase):
+- users
+- bills
+- groups
+- group_expenses
+- personal_subscriptions
+- shared_subscriptions
+- settlements
+- user_balances
+
+🚀 NEXT STEPS:
+Focus on building functional features in priority order, starting with Bills Management.
+
+
+================================================================================
+2. DEVELOPMENT PHASES OVERVIEW
+================================================================================
+
+PHASE 1: Bills Management (Core Feature - Highest Priority)
+├── Add Bill functionality
+├── View Bills list
+├── Bill details page
+└── Edit/Delete bills
+
+PHASE 2: Bill Splitting (Core Feature)
+├── Add participants to bills
+├── Split calculation methods
+├── Split preview and summary
+└── Balance tracking
+
+PHASE 3: Personal Subscriptions
+├── Add subscription
+├── List subscriptions
+├── Renewal tracking
+└── Cost calculations
+
+PHASE 4: Groups & Shared Expenses
+├── Create/manage groups
+├── Add group members
+├── Group expenses
+└── Group settlements
+
+PHASE 5: Dashboard Integration
+├── Real data integration
+├── Activity feed
+├── Quick actions
+└── Data visualizations
+
+PHASE 6: Polish & Production
+├── Error handling
+├── Loading states
+├── Responsive design
+└── Performance optimization
+
+
+================================================================================
+3. PHASE 1: BILLS MANAGEMENT
+================================================================================
+
+PRIORITY: ⭐⭐⭐⭐⭐ (HIGHEST - START HERE)
+
+GOAL: Allow users to create, view, edit, and delete personal bills
+
+--------------------------------------------------------------------------------
+TASK 1.1: Create "Add Bill" Modal & Form
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create AddBillModal.jsx component in src/features/bills/components/
+    - Modal with form to add new bill
+    - Use existing Modal component as wrapper
+
+[ ] Add form fields:
+    - Bill Name (text input, required)
+    - Amount (number input, required, min: 0.01)
+    - Currency (dropdown: USD, EUR, INR, GBP)
+    - Due Date (date picker, required)
+    - Category (dropdown: Utilities, Rent, Food, Transport, Entertainment, Other)
+    - Notes (textarea, optional)
+    - Recurring (checkbox)
+    - If recurring: Frequency (dropdown: Weekly, Monthly, Yearly)
+
+[ ] Implement form validation using React Hook Form + Zod:
+    - Bill name: min 1 char, max 100 chars
+    - Amount: positive number with 2 decimal places
+    - Due date: cannot be in the past
+    - Category: must be from predefined list
+
+[ ] Create form submission handler:
+    - Validate all fields
+    - Show loading state on button
+    - Call Supabase API to insert bill
+    - Handle success: close modal, show success toast, refresh bills list
+    - Handle error: show error message, keep modal open
+
+[ ] Add "Cancel" and "Add Bill" buttons with proper styling
+
+📁 FILES TO CREATE:
+- src/features/bills/components/AddBillModal.jsx
+- src/features/bills/hooks/useBills.js (React Query hooks)
+- src/services/api/billsService.js (Supabase API calls)
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx (add modal trigger)
+
+✅ EXPECTED OUTCOME:
+- Clicking "Add Bill" button opens modal
+- Form validates inputs correctly
+- Successful submission saves bill to Supabase
+- Modal closes and bill appears in list
+
+🧪 TESTING CHECKLIST:
+[ ] Modal opens when clicking "Add Bill" button
+[ ] All form fields render correctly
+[ ] Validation errors show for invalid inputs
+[ ] Cannot submit with empty required fields
+[ ] Amount accepts decimals (e.g., 125.50)
+[ ] Due date picker shows calendar
+[ ] Recurring checkbox toggles frequency field
+[ ] Submit button shows loading state
+[ ] Success: bill saved and modal closes
+[ ] Error: error message displays properly
+
+--------------------------------------------------------------------------------
+TASK 1.2: Create Bills Service (Supabase API)
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create billsService.js with CRUD operations:
+    - createBill(billData) - INSERT new bill
+    - getBills(userId) - SELECT all bills for user
+    - getBillById(billId) - SELECT single bill
+    - updateBill(billId, updates) - UPDATE existing bill
+    - deleteBill(billId) - DELETE bill
+    - getUpcomingBills(userId, days) - SELECT bills due in X days
+
+[ ] Add error handling for each function:
+    - Try-catch blocks
+    - Return { data, error } structure
+    - Log errors for debugging
+
+[ ] Implement filters:
+    - Filter by category
+    - Filter by date range
+    - Filter by status (paid/unpaid)
+    - Sort by due date, amount, name
+
+[ ] Add data transformations:
+    - Convert timestamps to Date objects
+    - Format amounts to 2 decimals
+    - Calculate days until due
+
+📁 FILES TO CREATE:
+- src/services/api/billsService.js
+
+✅ EXPECTED OUTCOME:
+- All CRUD operations work correctly
+- Errors are handled gracefully
+- Data is properly formatted
+
+🧪 TESTING CHECKLIST:
+[ ] createBill() successfully inserts to database
+[ ] getBills() returns array of user's bills
+[ ] getBillById() returns correct bill object
+[ ] updateBill() modifies existing bill
+[ ] deleteBill() removes bill from database
+[ ] Filters work correctly
+[ ] Error handling prevents crashes
+
+--------------------------------------------------------------------------------
+TASK 1.3: Create Bills List View
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create BillsList.jsx component in src/features/bills/components/
+    - Display all bills in grid or list format
+    - Show: name, amount, due date, category, status
+
+[ ] Implement bill card design:
+    - Use Card component as base
+    - Category icon on left
+    - Bill name as heading
+    - Amount in large, bold text
+    - Due date with days remaining
+    - Status badge (Paid, Overdue, Upcoming)
+    - Action buttons (Edit, Delete)
+
+[ ] Add empty state:
+    - Show when no bills exist
+    - Display message: "No bills yet"
+    - Show "Add Bill" button
+
+[ ] Implement loading state:
+    - Show skeleton loaders while fetching
+    - Use Loader component
+
+[ ] Add filters and sorting:
+    - Filter by category
+    - Filter by status
+    - Sort by due date, amount, name
+    - Search by name
+
+[ ] Add pagination or infinite scroll (if >20 bills)
+
+📁 FILES TO CREATE:
+- src/features/bills/components/BillsList.jsx
+- src/features/bills/components/BillCard.jsx
+- src/features/bills/pages/BillsPage.jsx
+
+📁 FILES TO MODIFY:
+- src/App.jsx (add route for /bills)
+- src/features/dashboard/pages/Dashboard.jsx (link to bills page)
+
+✅ EXPECTED OUTCOME:
+- Bills display in organized, readable format
+- Status badges show correct state
+- Filters and sorting work smoothly
+- Empty state shows when no bills
+
+🧪 TESTING CHECKLIST:
+[ ] Bills load on page mount
+[ ] Loading skeleton shows while fetching
+[ ] Bills display correctly with all information
+[ ] Status badges show correct colors (red for overdue, yellow for upcoming, green for paid)
+[ ] Category icons display properly
+[ ] Empty state shows when no bills
+[ ] Filter by category works
+[ ] Search filters bills by name
+[ ] Sort options reorder bills correctly
+[ ] Clicking bill opens detail view
+
+--------------------------------------------------------------------------------
+TASK 1.4: Create Bill Detail View
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create BillDetail.jsx component
+    - Show full bill information
+    - Display: name, amount, currency, due date, category, notes, recurring info
+    - Show creation date and last updated date
+
+[ ] Add status section:
+    - Current status (Paid/Unpaid)
+    - Days until due (or days overdue)
+    - Payment history (if recurring)
+
+[ ] Implement action buttons:
+    - Edit button (opens edit modal)
+    - Delete button (shows confirmation)
+    - Mark as Paid button
+    - Share button (future feature)
+
+[ ] Add breadcrumb navigation:
+    - Dashboard > Bills > [Bill Name]
+
+[ ] Handle bill not found:
+    - Show 404 message
+    - Redirect to bills list
+
+📁 FILES TO CREATE:
+- src/features/bills/pages/BillDetail.jsx
+
+📁 FILES TO MODIFY:
+- src/App.jsx (add route for /bills/:id)
+
+✅ EXPECTED OUTCOME:
+- Bill details display clearly
+- All information is readable
+- Action buttons work correctly
+- Navigation is intuitive
+
+🧪 TESTING CHECKLIST:
+[ ] Bill details load correctly
+[ ] All information displays properly
+[ ] Status shows correct state
+[ ] Days until due calculates correctly
+[ ] Edit button opens edit modal
+[ ] Delete button shows confirmation
+[ ] Mark as Paid updates status
+[ ] Breadcrumb navigation works
+[ ] Invalid bill ID shows error
+
+--------------------------------------------------------------------------------
+TASK 1.5: Implement Edit Bill Functionality
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create EditBillModal.jsx component
+    - Similar to AddBillModal but pre-filled with existing data
+    - Fetch bill data by ID
+    - Populate form fields with current values
+
+[ ] Implement update handler:
+    - Validate changes
+    - Call updateBill() from billsService
+    - Show loading state
+    - Handle success: close modal, refresh bill
+    - Handle error: show error message
+
+[ ] Add "Last updated" timestamp display
+
+[ ] Implement optimistic updates:
+    - Update UI immediately
+    - Revert if API call fails
+
+📁 FILES TO CREATE:
+- src/features/bills/components/EditBillModal.jsx
+
+📁 FILES TO MODIFY:
+- src/features/bills/components/BillCard.jsx (add edit button)
+- src/features/bills/pages/BillDetail.jsx (add edit button)
+
+✅ EXPECTED OUTCOME:
+- Edit modal opens with pre-filled data
+- Changes save successfully
+- UI updates reflect changes immediately
+
+🧪 TESTING CHECKLIST:
+[ ] Edit button opens modal
+[ ] Form pre-fills with current bill data
+[ ] Changes can be made to any field
+[ ] Validation still works
+[ ] Save button updates bill
+[ ] UI updates without page refresh
+[ ] Cancel button discards changes
+[ ] Error handling works
+
+--------------------------------------------------------------------------------
+TASK 1.6: Implement Delete Bill Functionality
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create confirmation dialog component:
+    - Warning message: "Are you sure you want to delete this bill?"
+    - Show bill name and amount
+    - "Cancel" and "Delete" buttons
+    - Red styling for delete action
+
+[ ] Implement delete handler:
+    - Call deleteBill() from billsService
+    - Show loading state on button
+    - Handle success: close dialog, remove from UI, show success toast
+    - Handle error: show error message, keep dialog open
+
+[ ] Add soft delete option (optional):
+    - Mark as deleted instead of removing from database
+    - Add "Restore" functionality
+
+[ ] Implement optimistic updates:
+    - Remove from UI immediately
+    - Revert if API call fails
+
+📁 FILES TO CREATE:
+- src/components/common/ConfirmDialog/ConfirmDialog.jsx
+
+📁 FILES TO MODIFY:
+- src/features/bills/components/BillCard.jsx (add delete button)
+- src/features/bills/pages/BillDetail.jsx (add delete button)
+
+✅ EXPECTED OUTCOME:
+- Delete button shows confirmation dialog
+- Confirmation required before deletion
+- Bill removed from UI and database
+- Success message shows
+
+🧪 TESTING CHECKLIST:
+[ ] Delete button opens confirmation dialog
+[ ] Dialog shows correct bill information
+[ ] Cancel button closes dialog without deleting
+[ ] Delete button removes bill
+[ ] Bill disappears from list
+[ ] Database record is deleted
+[ ] Error handling works
+[ ] Cannot delete twice
+
+--------------------------------------------------------------------------------
+TASK 1.7: Add "Mark as Paid" Functionality
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Add "paid" status field to bills:
+    - Boolean field: paid (true/false)
+    - Timestamp field: paid_at
+
+[ ] Create markAsPaid() function in billsService:
+    - Update bill status to paid
+    - Set paid_at timestamp
+    - If recurring: create next bill instance
+
+[ ] Add "Mark as Paid" button to bill cards and detail view:
+    - Show only if bill is unpaid
+    - Show checkmark icon
+    - Change to "Paid" badge when clicked
+
+[ ] Update UI to reflect paid status:
+    - Green checkmark badge
+    - Strikethrough or muted styling
+    - Show payment date
+
+[ ] Add "Undo" option (for 5 seconds after marking paid):
+    - Toast notification with undo button
+    - Revert status if undo clicked
+
+📁 FILES TO MODIFY:
+- src/services/api/billsService.js (add markAsPaid, markAsUnpaid)
+- src/features/bills/components/BillCard.jsx (add button)
+- src/features/bills/pages/BillDetail.jsx (add button)
+
+✅ EXPECTED OUTCOME:
+- Bills can be marked as paid
+- Status updates immediately in UI
+- Paid bills show distinct styling
+- Undo option works
+
+🧪 TESTING CHECKLIST:
+[ ] "Mark as Paid" button appears on unpaid bills
+[ ] Clicking button updates status
+[ ] UI shows paid badge
+[ ] Paid timestamp is recorded
+[ ] Undo button appears in toast
+[ ] Undo reverts the status
+[ ] Recurring bills create next instance
+[ ] Filter by paid/unpaid works
+
+
+================================================================================
+4. PHASE 2: BILL SPLITTING
+================================================================================
+
+PRIORITY: ⭐⭐⭐⭐ (HIGH)
+
+GOAL: Allow users to split bills with friends and track who owes what
+
+--------------------------------------------------------------------------------
+TASK 2.1: Add Participants to Bills
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Add "Split with others" toggle to AddBillModal
+    - Checkbox: "Split this bill"
+    - When checked, show participant section
+
+[ ] Create ParticipantSelector component:
+    - Search/select from friends list
+    - Add participants by email (if not in friends)
+    - Display selected participants with avatars
+    - Show count: "Split between X people"
+
+[ ] Update bill data model:
+    - Add participants array field
+    - Store participant user IDs
+    - Store participant names and emails
+
+[ ] Create participants UI:
+    - Chip/badge for each participant
+    - Remove button (X) on each chip
+    - Add participant button (+)
+
+📁 FILES TO CREATE:
+- src/features/bills/components/ParticipantSelector.jsx
+- src/features/bills/components/ParticipantChip.jsx
+
+📁 FILES TO MODIFY:
+- src/features/bills/components/AddBillModal.jsx
+- src/services/api/billsService.js (update createBill to include participants)
+
+✅ EXPECTED OUTCOME:
+- Users can add multiple participants to bills
+- Participants display as chips
+- Can remove participants before saving
+
+🧪 TESTING CHECKLIST:
+[ ] "Split with others" toggle works
+[ ] Participant selector appears when toggled
+[ ] Can search for existing friends
+[ ] Can add by email if not found
+[ ] Selected participants display as chips
+[ ] Can remove participants
+[ ] Count updates correctly
+[ ] Bill saves with participants
+
+--------------------------------------------------------------------------------
+TASK 2.2: Implement Split Calculation Methods
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create SplitMethodSelector component:
+    - Radio buttons for split methods
+    - Options: Equal Split, Custom Amount, Percentage
+
+[ ] Implement "Equal Split" method:
+    - Divide total amount by number of participants
+    - Show amount per person
+    - Handle rounding (ensure total matches exactly)
+
+[ ] Implement "Custom Amount" method:
+    - Input field for each participant
+    - Show remaining amount to allocate
+    - Validate: sum must equal total
+    - Warning if amounts don't match
+
+[ ] Implement "Percentage Split" method:
+    - Percentage input for each participant
+    - Calculate amounts based on percentages
+    - Validate: percentages must sum to 100%
+    - Show calculated amounts
+
+[ ] Add "I paid" indicator:
+    - Let user specify who paid initially
+    - Default to current user
+    - Used to calculate who owes whom
+
+📁 FILES TO CREATE:
+- src/features/bills/components/SplitMethodSelector.jsx
+- src/features/bills/components/EqualSplit.jsx
+- src/features/bills/components/CustomSplit.jsx
+- src/features/bills/components/PercentageSplit.jsx
+- src/utils/splitCalculations.js (calculation functions)
+
+📁 FILES TO MODIFY:
+- src/features/bills/components/AddBillModal.jsx
+
+✅ EXPECTED OUTCOME:
+- Users can choose split method
+- Calculations are accurate
+- All methods validate correctly
+- Clear visual feedback
+
+🧪 TESTING CHECKLIST:
+[ ] Can select split method
+[ ] Equal split divides correctly
+[ ] Rounding is handled properly (no penny errors)
+[ ] Custom amounts can be entered
+[ ] Validation shows when custom amounts don't match total
+[ ] Percentages can be entered
+[ ] Validation shows when percentages don't sum to 100%
+[ ] Calculated amounts from percentages are correct
+[ ] "I paid" indicator works
+[ ] All calculations update in real-time
+
+--------------------------------------------------------------------------------
+TASK 2.3: Create Split Preview & Summary
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create SplitSummary component:
+    - Show total bill amount
+    - Show split method used
+    - List each participant with their share
+    - Show who paid and who owes
+
+[ ] Add balance calculation:
+    - Calculate net balance for each participant
+    - Show "You owe" or "Owes you" for each person
+    - Display in red (owe) or green (owed)
+
+[ ] Create visual split representation:
+    - Progress bar showing each person's share
+    - Color-coded by participant
+    - Hover to see exact amount
+
+[ ] Add "Review Split" step in modal:
+    - Show before final submission
+    - Allow going back to edit
+    - Confirm and save button
+
+📁 FILES TO CREATE:
+- src/features/bills/components/SplitSummary.jsx
+- src/features/bills/components/SplitVisualization.jsx
+
+📁 FILES TO MODIFY:
+- src/features/bills/components/AddBillModal.jsx
+
+✅ EXPECTED OUTCOME:
+- Clear summary of split shown before saving
+- Users understand who owes what
+- Visual representation is intuitive
+- Can review and edit before confirming
+
+🧪 TESTING CHECKLIST:
+[ ] Summary displays all participants
+[ ] Amounts are correct for each person
+[ ] "Owes" vs "Owed" is calculated correctly
+[ ] Visual bar chart shows proportions
+[ ] Colors distinguish participants
+[ ] Can navigate back to edit
+[ ] Confirm button saves the split
+[ ] Summary appears in bill detail view
+
+--------------------------------------------------------------------------------
+TASK 2.4: Create Balances Page
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create BalancesPage.jsx:
+    - Show all outstanding balances
+    - Group by person: "You owe" and "Owes you"
+    - Show total owed and total to collect
+
+[ ] Implement balance cards:
+    - Person's name and avatar
+    - Net amount (owed or owing)
+    - List of bills contributing to balance
+    - "Settle Up" button
+
+[ ] Add balance calculation logic:
+    - Aggregate all split bills
+    - Calculate net balance per person
+    - Handle multiple currencies
+
+[ ] Create filters:
+    - Filter by person
+    - Filter by currency
+    - Show settled vs outstanding
+
+📁 FILES TO CREATE:
+- src/features/balances/pages/BalancesPage.jsx
+- src/features/balances/components/BalanceCard.jsx
+- src/services/api/balancesService.js
+- src/utils/balanceCalculations.js
+
+📁 FILES TO MODIFY:
+- src/App.jsx (add /balances route)
+- src/features/dashboard/pages/Dashboard.jsx (add link to balances)
+
+✅ EXPECTED OUTCOME:
+- Users can see all balances at a glance
+- Clear distinction between owed and owing
+- Easy access to settle up
+
+🧪 TESTING CHECKLIST:
+[ ] Balances page loads
+[ ] All balances display correctly
+[ ] Net amounts are accurate
+[ ] "You owe" section shows correct people
+[ ] "Owes you" section shows correct people
+[ ] Total amounts calculate correctly
+[ ] Bills list for each person is accurate
+[ ] Filters work
+[ ] Settle up button appears
+
+--------------------------------------------------------------------------------
+TASK 2.5: Implement Settle Up Functionality
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create SettleUpModal.jsx:
+    - Show person and amount to settle
+    - Payment method selection (Cash, Venmo, PayPal, etc.)
+    - Optional note field
+    - Date of settlement (defaults to today)
+
+[ ] Create settlement record in database:
+    - Insert into settlements table
+    - Record: payer, payee, amount, date, method, notes
+
+[ ] Update balances:
+    - Reduce or clear balance between users
+    - Mark related bills as settled
+    - Update user_balances table
+
+[ ] Add settlement history:
+    - Show past settlements
+    - Display: date, amount, method, notes
+    - Link to related bills
+
+[ ] Send settlement notification (future):
+    - Notify other person of settlement
+    - Ask for confirmation
+
+📁 FILES TO CREATE:
+- src/features/balances/components/SettleUpModal.jsx
+- src/features/balances/components/SettlementHistory.jsx
+- src/services/api/settlementsService.js
+
+📁 FILES TO MODIFY:
+- src/features/balances/components/BalanceCard.jsx
+- src/services/api/balancesService.js
+
+✅ EXPECTED OUTCOME:
+- Users can settle balances
+- Settlements are recorded
+- Balances update correctly
+- History is maintained
+
+🧪 TESTING CHECKLIST:
+[ ] Settle up button opens modal
+[ ] Modal shows correct person and amount
+[ ] Payment method can be selected
+[ ] Date defaults to today
+[ ] Can add notes
+[ ] Settlement saves to database
+[ ] Balance updates immediately
+[ ] Settlement appears in history
+[ ] Related bills marked as settled
+[ ] Cannot settle same balance twice
+
+
+================================================================================
+5. PHASE 3: PERSONAL SUBSCRIPTIONS
+================================================================================
+
+PRIORITY: ⭐⭐⭐ (MEDIUM)
+
+GOAL: Track recurring subscriptions and their costs
+
+--------------------------------------------------------------------------------
+TASK 3.1: Create "Add Subscription" Modal & Form
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create AddSubscriptionModal.jsx component:
+    - Form to add new subscription
+    - Use Modal component as wrapper
+
+[ ] Add form fields:
+    - Service Name (text, required) - e.g., Netflix, Spotify
+    - Amount (number, required)
+    - Currency (dropdown)
+    - Billing Cycle (dropdown: Weekly, Monthly, Yearly)
+    - Next Billing Date (date picker, required)
+    - Category (dropdown: Entertainment, Productivity, Cloud Storage, etc.)
+    - Auto-renew (checkbox, default: true)
+    - Notes (textarea, optional)
+    - Icon/Logo (optional - image upload or icon selector)
+
+[ ] Implement form validation:
+    - Service name: required, min 1 char
+    - Amount: positive number
+    - Next billing date: cannot be in the past
+
+[ ] Create submission handler:
+    - Save to personal_subscriptions table
+    - Calculate annual cost
+    - Set up renewal reminders (future)
+
+📁 FILES TO CREATE:
+- src/features/subscriptions/components/AddSubscriptionModal.jsx
+- src/services/api/subscriptionsService.js
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx
+
+✅ EXPECTED OUTCOME:
+- Users can add subscriptions easily
+- Form validates inputs
+- Subscriptions save to database
+
+🧪 TESTING CHECKLIST:
+[ ] Modal opens on button click
+[ ] All fields render correctly
+[ ] Validation works
+[ ] Can select billing cycle
+[ ] Date picker shows calendar
+[ ] Submission saves subscription
+[ ] Modal closes on success
+[ ] Error handling works
+
+--------------------------------------------------------------------------------
+TASK 3.2: Create Subscriptions List View
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create SubscriptionsList.jsx component:
+    - Display all subscriptions in grid
+    - Show: service name, logo, amount, billing cycle, next renewal
+
+[ ] Implement subscription card design:
+    - Service logo/icon at top
+    - Service name as heading
+    - Amount with billing cycle (e.g., "$9.99/month")
+    - Next renewal date
+    - Days until renewal
+    - Status badge (Active, Cancelled)
+    - Action buttons (Edit, Cancel)
+
+[ ] Add summary section:
+    - Total monthly cost
+    - Total yearly cost
+    - Most expensive subscription
+    - Number of active subscriptions
+
+[ ] Implement grouping and sorting:
+    - Group by category
+    - Sort by cost, renewal date, name
+    - Filter by active/cancelled
+
+[ ] Add empty state
+
+📁 FILES TO CREATE:
+- src/features/subscriptions/components/SubscriptionsList.jsx
+- src/features/subscriptions/components/SubscriptionCard.jsx
+- src/features/subscriptions/pages/SubscriptionsPage.jsx
+
+📁 FILES TO MODIFY:
+- src/App.jsx (add route)
+
+✅ EXPECTED OUTCOME:
+- All subscriptions display clearly
+- Summary shows accurate totals
+- Cards are visually appealing
+
+🧪 TESTING CHECKLIST:
+[ ] Subscriptions load correctly
+[ ] Cards show all information
+[ ] Logos/icons display
+[ ] Next renewal calculates correctly
+[ ] Summary totals are accurate
+[ ] Grouping works
+[ ] Sorting works
+[ ] Filters work
+[ ] Empty state shows when no subscriptions
+
+--------------------------------------------------------------------------------
+TASK 3.3: Implement Subscription Renewal Tracking
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create auto-renewal logic:
+    - Check for subscriptions due for renewal
+    - Create next billing record automatically
+    - Update next billing date
+
+[ ] Add renewal history:
+    - Track all past renewals
+    - Show payment history
+    - Calculate total spent per subscription
+
+[ ] Create reminders:
+    - Notification 3 days before renewal
+    - Notification on renewal day
+    - Option to customize reminder timing
+
+[ ] Add renewal calendar view:
+    - Monthly calendar
+    - Show subscriptions by renewal date
+    - Color-coded by category
+
+📁 FILES TO CREATE:
+- src/features/subscriptions/components/RenewalCalendar.jsx
+- src/features/subscriptions/components/RenewalHistory.jsx
+- src/utils/renewalCalculations.js
+
+📁 FILES TO MODIFY:
+- src/services/api/subscriptionsService.js
+
+✅ EXPECTED OUTCOME:
+- Renewals tracked automatically
+- Users see upcoming renewals
+- History is maintained
+
+🧪 TESTING CHECKLIST:
+[ ] Renewals auto-update dates
+[ ] History shows all past renewals
+[ ] Total spent calculates correctly
+[ ] Calendar view displays subscriptions
+[ ] Reminders work (if implemented)
+[ ] Can view renewal details
+
+--------------------------------------------------------------------------------
+TASK 3.4: Implement Edit/Cancel Subscription
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create EditSubscriptionModal.jsx:
+    - Pre-fill form with current data
+    - Same fields as add modal
+
+[ ] Implement cancel functionality:
+    - Confirmation dialog
+    - Mark as cancelled (don't delete)
+    - Stop auto-renewals
+    - Keep in history
+
+[ ] Add reactivate option:
+    - For cancelled subscriptions
+    - Reset next billing date
+    - Resume auto-renewals
+
+📁 FILES TO CREATE:
+- src/features/subscriptions/components/EditSubscriptionModal.jsx
+
+📁 FILES TO MODIFY:
+- src/features/subscriptions/components/SubscriptionCard.jsx
+- src/services/api/subscriptionsService.js
+
+✅ EXPECTED OUTCOME:
+- Can edit subscription details
+- Can cancel subscriptions
+- Can reactivate if needed
+
+🧪 TESTING CHECKLIST:
+[ ] Edit modal opens with current data
+[ ] Changes save correctly
+[ ] Cancel shows confirmation
+[ ] Cancel stops renewals
+[ ] Cancelled subscriptions show differently
+[ ] Reactivate works
+[ ] Cannot edit cancelled subscriptions
+
+
+================================================================================
+6. PHASE 4: GROUPS & SHARED EXPENSES
+================================================================================
+
+PRIORITY: ⭐⭐⭐ (MEDIUM)
+
+GOAL: Create groups for shared expenses (roommates, trips, etc.)
+
+--------------------------------------------------------------------------------
+TASK 4.1: Create Group Management
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create AddGroupModal.jsx:
+    - Group name (required)
+    - Group type (Apartment, Trip, Project, Other)
+    - Description (optional)
+    - Initial members
+
+[ ] Create GroupsList.jsx:
+    - Display all groups
+    - Show: name, member count, total expenses, your balance
+
+[ ] Create GroupDetail.jsx:
+    - Group information
+    - Members list with avatars
+    - Recent expenses
+    - Balance summary
+
+[ ] Implement group actions:
+    - Add member (by email)
+    - Remove member
+    - Edit group details
+    - Delete group (admin only)
+
+📁 FILES TO CREATE:
+- src/features/groups/components/AddGroupModal.jsx
+- src/features/groups/components/GroupsList.jsx
+- src/features/groups/pages/GroupDetail.jsx
+- src/services/api/groupsService.js
+
+📁 FILES TO MODIFY:
+- src/App.jsx
+
+✅ EXPECTED OUTCOME:
+- Users can create and manage groups
+- Groups display with key info
+- Members can be added/removed
+
+🧪 TESTING CHECKLIST:
+[ ] Can create new group
+[ ] Groups list displays
+[ ] Can click into group details
+[ ] Members list shows correctly
+[ ] Can add members by email
+[ ] Can remove members
+[ ] Can edit group info
+[ ] Admin can delete group
+
+--------------------------------------------------------------------------------
+TASK 4.2: Add Group Expenses
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create AddGroupExpenseModal.jsx:
+    - Similar to AddBillModal
+    - Auto-include all group members
+    - Split calculation built-in
+
+[ ] Display group expenses:
+    - List view of all expenses
+    - Show: description, amount, paid by, split method
+    - Filter by date, category, member
+
+[ ] Implement expense detail view:
+    - Full expense information
+    - Split breakdown
+    - Who's paid, who hasn't
+    - Comments/notes section
+
+📁 FILES TO CREATE:
+- src/features/groups/components/AddGroupExpenseModal.jsx
+- src/features/groups/components/GroupExpensesList.jsx
+- src/features/groups/components/GroupExpenseDetail.jsx
+
+📁 FILES TO MODIFY:
+- src/features/groups/pages/GroupDetail.jsx
+
+✅ EXPECTED OUTCOME:
+- Group expenses easy to add
+- All members included automatically
+- Expenses tracked per group
+
+🧪 TESTING CHECKLIST:
+[ ] Can add expense to group
+[ ] All members auto-included
+[ ] Split calculation works
+[ ] Expenses list shows in group
+[ ] Can view expense details
+[ ] Filters work
+
+--------------------------------------------------------------------------------
+TASK 4.3: Group Balance Tracking
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Calculate group balances:
+    - Net balance per member
+    - Who owes whom
+    - Simplify debts (A owes B, B owes C = A owes C)
+
+[ ] Create group balance view:
+    - Summary of all balances
+    - Visual representation (chart)
+    - Suggested settlements
+
+[ ] Implement group settle up:
+    - Similar to individual settle up
+    - Updates all related balances
+    - Notifies all members
+
+📁 FILES TO CREATE:
+- src/features/groups/components/GroupBalances.jsx
+- src/utils/groupBalanceCalculations.js
+
+📁 FILES TO MODIFY:
+- src/features/groups/pages/GroupDetail.jsx
+
+✅ EXPECTED OUTCOME:
+- Group balances calculated accurately
+- Debt simplification works
+- Easy to settle up
+
+🧪 TESTING CHECKLIST:
+[ ] Balances calculate correctly
+[ ] Debt simplification works
+[ ] Visual chart displays
+[ ] Settle up updates all balances
+[ ] All members see updates
+
+
+================================================================================
+7. PHASE 5: DASHBOARD INTEGRATION
+================================================================================
+
+PRIORITY: ⭐⭐ (LOW - POLISH)
+
+GOAL: Connect real data to dashboard and enhance user experience
+
+--------------------------------------------------------------------------------
+TASK 5.1: Connect Real Data to Dashboard Stats
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Update "Total Expenses" stat:
+    - Sum of all bills (paid and unpaid)
+    - Filter by current month
+
+[ ] Update "Total Owed" stat:
+    - Sum of negative balances
+    - Amount you owe to others
+
+[ ] Update "Subscriptions" stat:
+    - Count of active subscriptions
+    - Show monthly cost
+
+[ ] Add trend indicators:
+    - Compare to last month
+    - Show percentage change
+    - Arrow icons (up/down)
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx
+
+✅ EXPECTED OUTCOME:
+- Dashboard shows real user data
+- Stats update in real-time
+- Trends provide insights
+
+🧪 TESTING CHECKLIST:
+[ ] Total expenses calculates correctly
+[ ] Total owed is accurate
+[ ] Subscription count correct
+[ ] Monthly cost correct
+[ ] Trends show correctly
+
+--------------------------------------------------------------------------------
+TASK 5.2: Create Activity Feed
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create ActivityFeed.jsx component:
+    - Show recent activities
+    - Types: Bill added, Bill paid, Settlement, Subscription renewed
+
+[ ] Implement activity items:
+    - Icon for activity type
+    - Description text
+    - Timestamp (relative: "2 hours ago")
+    - Link to related item
+
+[ ] Add "View All" link to activities page
+
+[ ] Implement real-time updates (optional):
+    - Use Supabase real-time subscriptions
+    - Show new activities without refresh
+
+📁 FILES TO CREATE:
+- src/features/dashboard/components/ActivityFeed.jsx
+- src/features/dashboard/components/ActivityItem.jsx
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx
+
+✅ EXPECTED OUTCOME:
+- Users see recent activity
+- Activity provides quick overview
+- Links navigate to details
+
+🧪 TESTING CHECKLIST:
+[ ] Activity feed displays
+[ ] Recent activities show
+[ ] Icons display correctly
+[ ] Timestamps are relative
+[ ] Links work
+[ ] Real-time updates work (if implemented)
+
+--------------------------------------------------------------------------------
+TASK 5.3: Implement Quick Action Modals
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Connect "Add Bill" button to AddBillModal
+[ ] Connect "Split Bill" button to AddBillModal (with split enabled)
+[ ] Connect "Add Subscription" button to AddSubscriptionModal
+[ ] Ensure all modals work from dashboard
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx
+
+✅ EXPECTED OUTCOME:
+- Quick actions open correct modals
+- Modals function properly
+- Can perform actions without navigating away
+
+🧪 TESTING CHECKLIST:
+[ ] "Add Bill" opens modal
+[ ] "Split Bill" opens modal with split enabled
+[ ] "Add Subscription" opens modal
+[ ] All modals save correctly
+[ ] Dashboard refreshes after actions
+
+--------------------------------------------------------------------------------
+TASK 5.4: Add Data Visualizations
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create spending chart:
+    - Bar chart or line chart
+    - Show expenses over time
+    - Group by month or week
+
+[ ] Create category breakdown:
+    - Pie chart
+    - Show expenses by category
+    - Percentages and amounts
+
+[ ] Create subscription costs chart:
+    - Bar chart showing all subscriptions
+    - Sorted by cost
+
+[ ] Add "Insights" section:
+    - Highest expense category
+    - Most expensive day
+    - Average daily spending
+    - Suggested savings
+
+📁 FILES TO CREATE:
+- src/features/dashboard/components/SpendingChart.jsx
+- src/features/dashboard/components/CategoryBreakdown.jsx
+- src/features/dashboard/components/Insights.jsx
+- Install chart library: npm install recharts
+
+📁 FILES TO MODIFY:
+- src/features/dashboard/pages/Dashboard.jsx
+
+✅ EXPECTED OUTCOME:
+- Visual charts enhance understanding
+- Data is presented clearly
+- Insights provide value
+
+🧪 TESTING CHECKLIST:
+[ ] Charts render correctly
+[ ] Data is accurate
+[ ] Charts are responsive
+[ ] Hover shows details
+[ ] Insights are relevant
+
+
+================================================================================
+8. PHASE 6: POLISH & PRODUCTION
+================================================================================
+
+PRIORITY: ⭐ (FINAL POLISH)
+
+GOAL: Improve UX, handle errors, optimize performance
+
+--------------------------------------------------------------------------------
+TASK 6.1: Implement Toast Notifications
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Install toast library: npm install react-hot-toast
+[ ] Create toast configuration
+[ ] Add success toasts for all actions
+[ ] Add error toasts for failures
+[ ] Style toasts to match Tesla design
+
+📁 FILES TO CREATE:
+- src/utils/toast.js
+
+📁 FILES TO MODIFY:
+- All service files (add toast notifications)
+
+--------------------------------------------------------------------------------
+TASK 6.2: Improve Loading States
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Add skeleton loaders for all lists
+[ ] Add loading spinners for buttons
+[ ] Implement optimistic updates
+[ ] Add suspense boundaries
+[ ] Show loading progress for data fetching
+
+📁 FILES TO MODIFY:
+- All list components
+- All forms
+
+--------------------------------------------------------------------------------
+TASK 6.3: Error Handling & Validation
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Add error boundaries
+[ ] Create error pages (404, 500)
+[ ] Improve form validation messages
+[ ] Add retry logic for failed requests
+[ ] Log errors for debugging
+
+📁 FILES TO CREATE:
+- src/components/ErrorBoundary.jsx
+- src/pages/NotFound.jsx
+- src/pages/Error.jsx
+
+--------------------------------------------------------------------------------
+TASK 6.4: Responsive Design
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Test on mobile devices
+[ ] Adjust layouts for small screens
+[ ] Make modals mobile-friendly
+[ ] Add mobile navigation
+[ ] Test on tablets
+
+📁 FILES TO MODIFY:
+- All component styles
+
+--------------------------------------------------------------------------------
+TASK 6.5: Performance Optimization
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Implement code splitting
+[ ] Lazy load routes
+[ ] Optimize images
+[ ] Add caching strategies
+[ ] Minimize bundle size
+[ ] Add service worker (PWA)
+
+--------------------------------------------------------------------------------
+TASK 6.6: Add User Preferences
+--------------------------------------------------------------------------------
+
+📋 SUBTASKS:
+[ ] Create settings page
+[ ] Allow currency selection
+[ ] Allow date format selection
+[ ] Add dark mode toggle
+[ ] Save preferences to database
+
+
+================================================================================
+DEVELOPMENT WORKFLOW
+================================================================================
+
+FOR EACH TASK:
+1. [ ] Read task description and subtasks
+2. [ ] Create/modify files as listed
+3. [ ] Write code following Tesla design system
+4. [ ] Test functionality using testing checklist
+5. [ ] Verify expected outcome
+6. [ ] Commit changes with descriptive message
+7. [ ] Mark task as complete
+8. [ ] Move to next task
+
+COMMIT MESSAGE FORMAT:
+- feat: Add [feature name]
+- fix: Fix [bug description]
+- style: Update [component] styling
+- refactor: Refactor [code section]
+- test: Add tests for [feature]
+
+TESTING APPROACH:
+- Test each feature immediately after building
+- Don't move to next task until current one works
+- Use browser console for debugging
+- Check Supabase database for data integrity
+
+
+================================================================================
+NOTES & TIPS
+================================================================================
+
+🎯 FOCUS AREAS:
+- User experience - make everything intuitive
+- Visual feedback - users should know what's happening
+- Error handling - never crash, always inform
+- Performance - fast loading, smooth animations
+
+🚀 QUICK WINS:
+- Start with bills management (most important)
+- Get one complete feature working before moving to next
+- Use existing components (Button, Input, Card, Modal)
+- Copy patterns from similar features
+
+⚠️ COMMON PITFALLS:
+- Not validating form inputs
+- Forgetting to handle loading/error states
+- Not testing with empty data
+- Skipping mobile testing
+- Not handling currency conversion
+
+💡 BEST PRACTICES:
+- Keep components small and focused
+- Extract reusable logic to hooks
+- Use proper TypeScript types (if migrating)
+- Add PropTypes for components
+- Comment complex calculations
+- Keep service files separate from components
+
+
+================================================================================
+END OF PROJECT PLAN
+================================================================================
+
+Ready to build Swiff! Start with Phase 1, Task 1.1. Good luck!
